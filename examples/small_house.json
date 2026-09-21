@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "house": {
+    "name": "small_house",
+    "width": 10.0,
+    "depth": 8.0,
+    "floors": 1,
+    "style": "cottage",
+    "stone_walls": false,
+    "terrain_margin": 6.0,
+    "tree_count": 6,
+    "seed": 3
+  },
+  "floors": [
+    {
+      "level": 0,
+      "height": 2.8,
+      "wall_thickness": 0.25,
+      "rooms": [
+        {
+          "name": "main",
+          "x": 0.0,
+          "y": 0.0,
+          "width": 10.0,
+          "depth": 8.0
+        }
+      ],
+      "doors": [
+        {
+          "type": "door",
+          "wall": "L0_main:south",
+          "position": 0.5,
+          "width": 0.9,
+          "height": 2.1,
+          "sill": 0.0
+        }
+      ],
+      "windows": [
+        {
+          "type": "window",
+          "wall": "L0_main:north",
+          "position": 0.5,
+          "width": 1.4,
+          "height": 1.2,
+          "sill": 0.9
+        },
+        {
+          "type": "window",
+          "wall": "L0_main:east",
+          "position": 0.5,
+          "width": 1.4,
+          "height": 1.2,
+          "sill": 0.9
+        }
+      ]
+    }
+  ],
+  "roof": {
+    "type": "gable",
+    "pitch": 35.0,
+    "overhang": 0.5,
+    "thickness": 0.15,
+    "ridge_axis": "auto",
+    "material": "ROOF"
+  }
+}

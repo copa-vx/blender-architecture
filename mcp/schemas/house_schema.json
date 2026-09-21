@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/copa-vx/blender-architecture/mcp/schemas/house_schema.json",
+  "title": "AI GLADE House Model",
+  "description": "Parametric description of a house. This is the contract between the model layer, the Blender generator and (later) the MCP server. Geometry is always derived from this document - never the other way round.",
+  "type": "object",
+  "required": ["house", "floors", "roof"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1,
+      "description": "Bumped when a breaking change lands. Readers must reject a version they do not understand."
+    },
+    "house": { "$ref": "#/$defs/house" },
+    "floors": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/floor" },
+      "description": "One entry per storey, ordered by level."
+    },
+    "roof": { "$ref": "#/$defs/roof" }
+  },
+  "$defs": {
+    "house": {
+      "type": "object",
+      "required": ["width", "depth"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "default": "house" },
+        "width": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Footprint along X, in metres. Every room must fit inside [0, width]."
+        },
+        "depth": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Footprint along Y, in metres. Every room must fit inside [0, depth]."
+        },
+        "floors": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Storey count. Informational - the authoritative list is the top-level 'floors' array."
+        },
+        "style": {
+          "type": "string",
+          "enum": ["cottage", "medieval", "modern", "scandinavian", "fantasy"],
+          "default": "cottage",
+          "description": "Visual style. Milestone 1 only distinguishes stone vs plaster walls."
+        },
+        "stone_walls": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable the experimental Geometry Nodes stone scatter on walls."
+        },
+        "terrain_margin": {
+          "type": "number",
+          "minimum": 0,
+          "default": 6,
+          "description": "Ground plane extent beyond the footprint, in metres."
+        },
+        "tree_count": { "type": "integer", "minimum": 0, "default": 6 },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Drives terrain noise and tree placement. Same seed => same scene."
+        }
+      }
+    },
+    "floor": {
+      "type": "object",
+      "required": ["level", "rooms"],
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "0 is the ground floor. Must be unique across the house."
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 2.8,
+          "description": "Storey height in metres. Every opening on this floor must be shorter than this."
+        },
+        "wall_thickness": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 0.25
+        },
+        "rooms": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/room" },
+          "description": "Rooms must not overlap. Walls are DERIVED from these rectangles; walls shared by two adjacent rooms are generated once."
+        },
+        "doors": { "type": "array", "items": { "$ref": "#/$defs/door" }, "default": [] },
+        "windows": { "type": "array", "items": { "$ref": "#/$defs/window" }, "default": [] }
+      }
+    },
+    "room": {
+      "type": "object",
+      "required": ["name", "x", "y", "width", "depth"],
+      "additionalProperties": false,
+      "description": "An axis-aligned rectangular room. (x, y) is its south-west corner.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique within its floor. Used to build wall ids."
+        },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "width": { "type": "number", "exclusiveMinimum": 0 },
+        "depth": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "opening": {
+      "type": "object",
+      "required": ["wall"],
+      "properties": {
+        "type": { "type": "string", "enum": ["door", "window"] },
+        "wall": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^L[0-9]+_[^:]+:(north|south|east|west)(_[0-9]+)?$",
+          "description": "Derived wall id, e.g. 'L0_salon:south'. Format: L<level>_<room>:<side>, with a trailing _<n> when a neighbour splits that side into several segments."
+        },
+        "position": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.5,
+          "description": "Normalised position along the wall (0 = start, 1 = end). Normalised on purpose: the opening keeps its relative place when the wall is resized."
+        },
+        "width": { "type": "number", "exclusiveMinimum": 0 },
+        "height": { "type": "number", "exclusiveMinimum": 0 },
+        "sill": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Height of the bottom edge above the floor. Must be 0 for doors."
+        }
+      }
+    },
+    "door": {
+      "allOf": [{ "$ref": "#/$defs/opening" }],
+      "properties": {
+        "sill": { "const": 0, "default": 0, "description": "Doors sit on the floor." }
+      }
+    },
+    "window": {
+      "allOf": [{ "$ref": "#/$defs/opening" }]
+    },
+    "roof": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["gable"],
+          "description": "Milestone 1 implements gable (dos aguas) only. hip / flat / tower are Milestone 2 (README 12 V2)."
+        },
+        "pitch": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "exclusiveMaximum": 90,
+          "default": 35,
+          "description": "Slope in degrees. Ridge height above the wall top = (span / 2) * tan(pitch)."
+        },
+        "overhang": { "type": "number", "minimum": 0, "default": 0.5 },
+        "thickness": { "type": "number", "exclusiveMinimum": 0, "default": 0.15 },
+        "ridge_axis": {
+          "type": "string",
+          "enum": ["auto", "x", "y"],
+          "default": "auto",
+          "description": "'auto' runs the ridge along the longer footprint side."
+        },
+        "material": { "type": "string", "default": "ROOF" }
+      }
+    }
+  }
+}

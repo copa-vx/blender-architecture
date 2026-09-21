@@ -1149,16 +1149,109 @@ Inicialmente utilizar una licencia que permita experimentar con el proyecto y ca
 
 ## Estado
 
-**🚧 Pre-alpha**
+**🚧 Alpha — Milestone 1 implementado**
 
-Proyecto en fase de diseño.
+El **Milestone 1 (Procedural House)** ya funciona: modelo paramétrico, rooms,
+walls, roof, windows, doors y el addon de Blender.
+
+| Milestone 1 | Estado |
+|---|---|
+| Addon Blender | ✅ panel N `AI GLADE` + 4 operadores |
+| HouseModel | ✅ `blender/model/` (Python puro, sin `bpy`) |
+| Rooms | ✅ rectangulares, las paredes se derivan de ellas |
+| Walls | ✅ una malla por pared, paredes compartidas deduplicadas |
+| Roof | ✅ dos aguas (gable) con pitch + overhang |
+| Windows | ✅ hueco booleano + marco + cristal |
+| Doors | ✅ hueco booleano + jamba + hoja |
+
+Extras del MVP (§2): terreno plano básico y árboles low-poly instanciados.
+
+**Todavía NO**: MCP (§17 dice explícitamente que va al final), paredes de
+piedra con Geometry Nodes, animación, tejados a cuatro aguas.
+
+![small_house](docs/preview_small_house.png)
+![cottage](docs/preview_cottage.png)
+
+---
+
+## Getting started
+
+### Requisitos
+
+* Blender **4.2+** (desarrollado y probado con 5.1.0)
+* Python 3.9+ en el sistema, solo para los tests del modelo
+
+### Generar una casa desde la línea de comandos
+
+```bash
+blender --background --python build_house.py -- examples/small_house.json \
+    --out out/small_house.blend --render out/small_house.png
+```
+
+Opciones útiles:
+
+```bash
+# cambiar el tamaño y regenerar toda la casa (README §26, "segundo paso")
+blender --background --python build_house.py -- examples/cottage.json \
+    --resize 18 15 --render out/cottage_grande.png
+
+# render rápido con Workbench, sin entorno
+blender --background --python build_house.py -- examples/cottage.json \
+    --engine WORKBENCH --no-environment --render out/rapido.png
+```
+
+### Instalar el addon
+
+`Edit > Preferences > Add-ons > Install…` y selecciona la carpeta
+`blender/addon/` (incluye `bl_info` y `blender_manifest.toml`, así que
+funciona con el sistema clásico y con las extensiones de 4.2+).
+
+El panel aparece en el viewport 3D, barra lateral `N`, pestaña **AI GLADE**:
+ajusta ancho/fondo/plantas/pitch y pulsa **Generate House**. `Load JSON`
+permite cargar modelos con varias habitaciones, que el panel por sí solo no
+puede describir.
+
+### Tests
+
+Dos suites. La del modelo no necesita Blender:
+
+```bash
+python3 -m pytest tests/test_house.py tests/test_rooms.py -v
+# 63 passed
+```
+
+La de geometría se ejecuta dentro de Blender:
+
+```bash
+blender --background --python tests/run_in_blender.py
+# 33 passed, 0 failed
+```
+
+### Validar un modelo contra el esquema
+
+```bash
+pip install check-jsonschema
+check-jsonschema --schemafile mcp/schemas/house_schema.json examples/*.json
+```
+
+---
+
+## Cómo encaja (Milestone 1)
+
+```text
+examples/*.json
+      ↓  House.from_dict()  +  House.validate()
+HouseModel            ← Python puro, sin bpy, testeable con pytest
+      ↓  Floor.walls()      ← las paredes se DERIVAN de las habitaciones
+Walls / Openings
+      ↓  generate_house()   ← borra la colección y reconstruye (idempotente)
+Escena Blender
+```
+
+El modelo se guarda como JSON en la propia escena (`scene["aig_house"]`), así
+que un `.blend` conserva su descripción paramétrica y se puede regenerar.
 
 ### Próximo objetivo
 
-Implementar el **Milestone 1**, comenzando por:
-
-1. `HouseModel`
-2. `Room`
-3. `Wall`
-4. `create_house()`
-5. Generación de una primera casa procedural en Blender.
+**Milestone 2 — Visual Quality**: piedra y madera procedurales, tejas,
+terreno real, hierba e iluminación.

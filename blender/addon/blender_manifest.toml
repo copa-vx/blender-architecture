@@ -1,0 +1,16 @@
+schema_version = "1.0.0"
+
+id = "ai_glade_house"
+version = "0.1.0"
+name = "AI GLADE - Procedural House"
+tagline = "Parametric procedural house builder"
+maintainer = "ai-glade contributors"
+type = "add-on"
+
+license = [
+  "SPDX:GPL-3.0-or-later",
+]
+
+blender_version_min = "4.2.0"
+
+tags = ["Add Mesh", "Geometry Nodes"]

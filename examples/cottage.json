@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "house": {
+    "name": "cottage",
+    "width": 12.0,
+    "depth": 10.0,
+    "floors": 1,
+    "style": "cottage",
+    "stone_walls": false,
+    "terrain_margin": 7.0,
+    "tree_count": 8,
+    "seed": 7
+  },
+  "floors": [
+    {
+      "level": 0,
+      "height": 2.7,
+      "wall_thickness": 0.25,
+      "rooms": [
+        {
+          "name": "salon",
+          "x": 0.0,
+          "y": 0.0,
+          "width": 7.0,
+          "depth": 6.0
+        },
+        {
+          "name": "cocina",
+          "x": 7.0,
+          "y": 0.0,
+          "width": 5.0,
+          "depth": 6.0
+        },
+        {
+          "name": "dormitorio",
+          "x": 0.0,
+          "y": 6.0,
+          "width": 12.0,
+          "depth": 4.0
+        }
+      ],
+      "doors": [
+        {
+          "type": "door",
+          "wall": "L0_salon:south",
+          "position": 0.35,
+          "width": 0.9,
+          "height": 2.1,
+          "sill": 0.0
+        }
+      ],
+      "windows": [
+        {
+          "type": "window",
+          "wall": "L0_salon:south",
+          "position": 0.75,
+          "width": 1.6,
+          "height": 1.3,
+          "sill": 0.9
+        },
+        {
+          "type": "window",
+          "wall": "L0_salon:west",
+          "position": 0.5,
+          "width": 1.4,
+          "height": 1.3,
+          "sill": 0.9
+        },
+        {
+          "type": "window",
+          "wall": "L0_cocina:east",
+          "position": 0.5,
+          "width": 1.2,
+          "height": 1.1,
+          "sill": 0.9
+        },
+        {
+          "type": "window",
+          "wall": "L0_dormitorio:north",
+          "position": 0.3,
+          "width": 1.4,
+          "height": 1.2,
+          "sill": 0.9
+        },
+        {
+          "type": "window",
+          "wall": "L0_dormitorio:north",
+          "position": 0.7,
+          "width": 1.4,
+          "height": 1.2,
+          "sill": 0.9
+        }
+      ]
+    }
+  ],
+  "roof": {
+    "type": "gable",
+    "pitch": 38.0,
+    "overhang": 0.6,
+    "thickness": 0.15,
+    "ridge_axis": "auto",
+    "material": "ROOF"
+  }
+}
