@@ -4,8 +4,8 @@
         house.json --out house.blend --render house.png --engine CYCLES ...
 
 The microVM has no GPU and no display, so the engine is Cycles on the CPU (EEVEE and
-Workbench need an OpenGL context). The progress comes from the "Sample n/m" lines that
-Cycles prints.
+Workbench need an OpenGL context). The progress comes from the "Sample n/m" statistics
+that service/render_progress.py prints from a `render_stats` handler.
 """
 
 import os
@@ -33,6 +33,9 @@ class Renderer:
         env = os.environ.get
         self.blender = blender or env("BLENDER_BIN", "blender")
         self.script = script or env("BUILD_HOUSE", os.path.join(env("REPO_DIR", "/opt/blender-architecture"), "build_house.py"))
+        # Prints the render statistics ("Sample n/m"): Blender 5.x prints none in --background mode.
+        self.progress_script = env("RENDER_PROGRESS", os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "render_progress.py"))
         self.work = work or env("WORK_DIR", "/work")
         self.threads = int(threads or env("RENDER_THREADS", "0"))  # 0: Blender uses every CPU
         self.timeout = float(timeout or env("RENDER_TIMEOUT_S", "1200"))
@@ -55,6 +58,8 @@ class Renderer:
         command = [self.blender, "--background", "--factory-startup"]
         if self.threads > 0:
             command += ["-t", str(self.threads)]
+        if os.path.exists(self.progress_script):
+            command += ["--python", self.progress_script]
         command += ["--python", self.script, "--", paths["json"], "--out", paths["blend"],
                     "--render", paths["png"], "--engine", self.engine, "--samples", str(samples),
                     "--width", str(width), "--height", str(height)]
@@ -77,7 +82,8 @@ class Renderer:
         try:
             for line in process.stdout:
                 line = line.rstrip()
-                if line.startswith("[build_house]") or "Error" in line or "error" in line:
+                if line.startswith("[build_house]") or (("Error" in line or "error" in line)
+                                                         and not line.startswith("[progress]")):
                     log.append(line)
                 match = SAMPLE.search(line)
                 if match and progress:

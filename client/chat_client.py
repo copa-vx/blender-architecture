@@ -192,7 +192,7 @@ def main():
                 ref = getattr(part, kind).file if kind in ("image", "audio") else (part.file if kind == "file" else None)
                 if ref is None:
                     continue
-                name = ref.filename or ("%s.bin" % kind)
+                name = "%03d-%s" % (a.sequence, ref.filename or ("%s.bin" % kind))
                 size = c.download(ref, os.path.join(args.out, name))
                 entry.setdefault("files", []).append({"kind": kind, "mime": ref.mime_type, "name": name, "bytes": size})
                 log("downloaded %s %s %s (%d bytes, SHA3-256 ok)" % (kind, ref.mime_type, name, size))
