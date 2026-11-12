@@ -1,0 +1,35 @@
+{
+    "tag": "blender-architecture",
+    "architecture": "linux/amd64",
+    "resources": {
+        "at_init": {
+            "mem_limit": 2147483648,
+            "disk_space": 4294967296,
+            "cpu_period": 100000,
+            "cpu_quota": 200000
+        },
+        "at_most": {
+            "mem_limit": 2147483648,
+            "disk_space": 4294967296,
+            "cpu_period": 100000,
+            "cpu_quota": 200000
+        }
+    },
+    "init": {
+        "entry_path": ["opt", "blender-architecture", "start.sh"]
+    },
+    "api": [
+        {
+            "port": 50051,
+            "transport": "tcp",
+            "protocol_stack": [
+                ["http2"],
+                ["grpc"],
+                {
+                    "tags": ["chat"],
+                    "prose": "blender-architecture as a chat service: describe a house (size, area, floors, rooms, roof pitch, style, trees) in English or Spanish, change it turn by turn, and get a render made by headless Blender 5.1 (Cycles on the CPUs of the node). A render comes as an image (image/png) with the house model (application/json) and the Blender scene (application/x-blender) as files. No AI model and no network: the answers come from a parser and the parametric model of the repository. Chat interface of chatui (docs/celaut/chat.md, revision 6, gRPC over h2c). Source: https://github.com/copa-vx/blender-architecture"
+                }
+            ]
+        }
+    ]
+}

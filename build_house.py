@@ -78,6 +78,9 @@ ENGINE_ALIASES = {
 
 def set_engine(scene, engine: str, samples: int) -> str:
     """Set the render engine, falling back to Workbench if unavailable."""
+    # The static RNA enum lists only the built-in engines: an engine of an add-on
+    # (CYCLES) is missing from it even when it is registered. So also try the
+    # assignment itself, which accepts every registered engine.
     available = {
         item.identifier
         for item in scene.bl_rna.properties["render"].fixed_type.bl_rna.properties[
@@ -86,6 +89,15 @@ def set_engine(scene, engine: str, samples: int) -> str:
     }
     candidates = ENGINE_ALIASES.get(engine.upper(), (engine,))
     chosen = next((name for name in candidates if name in available), None)
+    if chosen is None:
+        for name in candidates:
+            try:
+                scene.render.engine = name
+            except TypeError:
+                continue
+            chosen = name
+            available.add(name)
+            break
     if chosen is None:
         print(
             f"[build_house] engine {engine} not available "

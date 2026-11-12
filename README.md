@@ -1255,3 +1255,81 @@ que un `.blend` conserva su descripción paramétrica y se puede regenerar.
 
 **Milestone 2 — Visual Quality**: piedra y madera procedurales, tejas,
 terreno real, hierba e iluminación.
+
+---
+
+## Servicio Celaut (chat)
+
+El repositorio es también un servicio Celaut: un microVM con Blender 5.1 sin
+pantalla y un servidor de chat que sigue la interfaz **chat** de chatui
+(`celaut-project/chatui` → `docs/celaut/chat.md`, revisión 6; gRPC sobre HTTP/2
+en claro). Se habla con él desde la app chatui o desde cualquier cliente de
+`chat.proto`. La referencia de implementación es `Copa-ai/personal-nutrition`
+(bot sin IA, widgets ```` ```html ````, formularios ```` ```keyboard ````,
+archivos por hash SHA3-256).
+
+```text
+chatui ──gRPC h2c──▶ slot :50051 (http2 / grpc / chat)
+                       service/app/server.py    ChatService + FileService
+                       service/app/chat.py      historial, secuencia, eventos de Connect, archivos
+                       service/app/architect.py lee la frase → cambia el House → widget + teclado
+                       service/app/render.py    blender --background … build_house.py (Cycles, CPU)
+```
+
+**Un turno.** El usuario escribe en inglés o en español; no hay modelo de IA
+ni red: un analizador de frases cambia el modelo paramétrico (`blender.model`)
+y `House.validate()` decide. Un cambio que no valida no se guarda y la
+respuesta dice por qué. Cada respuesta lleva una tabla (bloque `html`), un
+formulario (bloque `keyboard`: ancho, fondo, plantas, pendiente, estilo,
+árboles, muros de piedra y **Aplicar y renderizar**) y 3 sugerencias. El título
+de la conversación es el tamaño de la casa.
+
+| El usuario dice | Qué hace |
+|---|---|
+| `Crea una casa de 120 m² con dos plantas y tres dormitorios` | 2 plantas, 60 m² por planta, salón + cocina abajo y 3 dormitorios arriba |
+| `12 x 9`, `ancho 14`, `fondo 10`, `más grande`, `más ancha` | Cambia la planta con `House.resize()` (los huecos guardan su posición) |
+| `3 plantas`, `añade una planta`, `quita una planta` | Copia la planta de arriba (la puerta pasa a ser ventana) o quita la última |
+| `4 habitaciones`, `3 dormitorios` | Rehace las plantas como una fila de habitaciones con puerta y ventanas |
+| `pendiente 40`, `estilo medieval`, `muros de piedra`, `8 árboles`, `semilla 3`, `otra variación` | Campos del `House` y del `Roof` |
+| `añade una ventana`, `quita una ventana` | Ventana en el hueco libre más grande de una pared exterior |
+| `ejemplo cottage`, `ejemplo medieval`, `nueva casa`, un JSON pegado | Carga `examples/*.json`, la casa por defecto o el JSON (validado) |
+| `json`, `deshacer`, `ayuda` | Muestra el modelo, deshace (hasta 20 pasos), ayuda |
+| `renderiza` / `renderiza borrador` / `renderiza alta` | Render 1024×768 / 640×480 / 1600×1200 |
+
+Solo existe el tejado a dos aguas (Milestone 1): `tejado plano` o `a cuatro
+aguas` reciben esa respuesta.
+
+**Un render.** La respuesta crece mientras Cycles renderiza (texto y eventos
+`MessageProgress` con las muestras). Un mensaje abierto no puede recibir partes
+que no son texto (chat.md 5.2), así que los archivos llegan en un segundo
+mensaje del asistente con el mismo `reply_to_message_id`: `image/png` (el
+render), `application/json` (el modelo, `house.json`) y
+`application/x-blender` (la escena, `house.blend`). El cliente los descarga
+con `FileService.DownloadFile` por su hash SHA3-256. El usuario solo envía
+texto: `accepted_mime_types` está vacío y una subida recibe `unsupported_media`.
+
+**Empaquetado.** `.service/` en la raíz, como personal-nutrition:
+`service.json` (slot `http2`/`grpc`/`chat` en el puerto 50051, `linux/amd64`,
+2 CPU, 2 GiB, 4 GiB de disco, sin red ni variables), `pack_config.json` (lista
+`include`) y el `Dockerfile` (Blender 5.1.2 oficial comprobado por sha256, sin
+los kernels de GPU; los stubs de `chat.proto` se generan en una etapa de
+construcción; un render de 1 muestra en la construcción comprueba las
+bibliotecas). Blender no publica binarios Linux arm64, así que no hay variante
+arm64.
+
+```bash
+nodo pack .                          # en un nodo x86_64 con KVM
+nodo execute <service_id>            # el slot del chat sale en Instance.uri_slot
+python3 client/chat_client.py <host:puerto> "Crea una casa de 120 m2 con dos plantas" "renderiza borrador"
+```
+
+**Tests** (sin Blender: un renderizador falso escribe los archivos):
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install -r service/requirements-dev.txt
+PATH=$PWD/.venv/bin:$PATH sh service/gen_proto.sh
+.venv/bin/python -m pytest -q service/tests tests
+```
+
+`service/proto/chat.proto` es una copia de `docs/celaut/chat.proto` de chatui
+(master f43d603); si la especificación cambia, se copia el archivo entero.
