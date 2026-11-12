@@ -112,6 +112,15 @@ def test_readme_example_in_spanish(architect):
     assert turn.text.startswith("Hecho:") and turn.title.startswith("Casa ")
 
 
+def test_layouts_survive_the_json_round_trip(architect):
+    """Blender reads the JSON: 3 rooms of 8.66 m / 3 must not overlap after its rounding."""
+    for text in ("Crea una casa de 120 m2 con dos plantas, tres dormitorios",
+                 "Width 14, depth 10, 2 floors", "5 rooms", "width 13.33", "bigger", "3 floors"):
+        say(architect, text)
+        House.from_json(architect.house.to_json()).validate()
+    assert len(architect.house.floors) == 3 and len(architect.house.floors[0].rooms) == 5
+
+
 def test_edits_in_english_and_undo(architect):
     say(architect, "12 x 9, pitch 40, style medieval, stone walls on, 8 trees, seed 4")
     h = architect.house

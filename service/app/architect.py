@@ -278,6 +278,10 @@ class Architect:
         try:
             changes = self.edit(work, low)
             if changes:
+                snap(work)
+                work.validate()
+                # Blender gets the JSON, so the JSON (rounded to 5 decimals) must be valid too.
+                work = House.from_json(work.to_json())
                 work.validate()
         except (ValidationError, ValueError) as error:
             plan["notes"].append(self.t("invalid", str(error)))
@@ -438,6 +442,19 @@ class Architect:
                     done.append("one window less")
                     break
         return done
+
+
+def snap(h, grid=1000.0):
+    """Put every room edge on a 1 mm grid. Two rooms that touch keep the same edge, so the
+    rounding of `to_dict` (5 decimals) cannot make them overlap by 0.00001 m."""
+    for f in h.floors:
+        for r in f.rooms:
+            x0, y0 = round(float(r.x) * grid) / grid, round(float(r.y) * grid) / grid
+            x1 = round((float(r.x) + float(r.width)) * grid) / grid
+            y1 = round((float(r.y) + float(r.depth)) * grid) / grid
+            r.x, r.y, r.width, r.depth = x0, y0, round(x1 - x0, 3), round(y1 - y0, 3)
+    h.width = round(float(h.width) * grid) / grid
+    h.depth = round(float(h.depth) * grid) / grid
 
 
 def value_after(low, names):
