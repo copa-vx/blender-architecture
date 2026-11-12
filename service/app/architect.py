@@ -34,6 +34,12 @@ PRESETS = {"small": "small_house", "pequena": "small_house", "cottage": "cottage
 SPANISH = re.compile(r"\b(casa|planta|plantas|ancho|fondo|tejado|ventana|renderiza|hola|ayuda|"
                      r"dormitorios?|habitaciones?|arboles|estilo|piedra|nueva|deshacer|quita|"
                      r"anade|pon|quiero|haz|muestra|ensename|mas|metros|con|una|dos|tres)\b")
+LABELS_ES = [(r"\bfloor height\b", "altura de planta"), (r"\bfloor\(s\)", "planta(s)"),
+             (r"\bno trees\b", "sin árboles"), (r"\btrees\b", "árboles"), (r"\bstyle\b", "estilo"),
+             (r"\bpitch\b", "pendiente"), (r"\bstone walls on\b", "muros de piedra"),
+             (r"\bstone walls off\b", "sin muros de piedra"), (r"\bseed\b", "semilla"),
+             (r"\ba window on\b", "una ventana en"), (r"\bone window less\b", "una ventana menos"),
+             (r"\bexample\b", "ejemplo"), (r"\bnew house\b", "casa nueva"), (r"\bname\b", "nombre")]
 MIN_ROOM = 2.6  # a room narrower than this has no room for a 1.4 m window
 MAX_SIDE = 40.0
 MAX_FLOORS = 4
@@ -174,16 +180,16 @@ class Architect:
         return "\n".join([
             "```keyboard",
             "<p>%s</p>" % e(self.t("form")),
-            '<div><input data-name="w" type="range" min="5" max="30" step="0.5" value="%s" placeholder="%s"></div>'
+            '<div><input data-name="w" type="range" min="5" max="40" step="0.1" value="%s" placeholder="%s"></div>'
             % (g(h.width), e(self.t("f_w"))),
-            '<div><input data-name="d" type="range" min="5" max="30" step="0.5" value="%s" placeholder="%s"></div>'
+            '<div><input data-name="d" type="range" min="5" max="40" step="0.1" value="%s" placeholder="%s"></div>'
             % (g(h.depth), e(self.t("f_d"))),
             '<div><select data-name="f" placeholder="%s">%s</select></div>' % (e(self.t("f_f")), floors),
-            '<div><input data-name="p" type="range" min="15" max="60" step="5" value="%s" placeholder="%s"></div>'
-            % (g(min(60, max(15, h.roof.pitch))), e(self.t("f_p"))),
+            '<div><input data-name="p" type="range" min="10" max="60" step="1" value="%s" placeholder="%s"></div>'
+            % (g(min(60, max(10, round(h.roof.pitch)))), e(self.t("f_p"))),
             '<div><select data-name="s" placeholder="%s">%s</select></div>' % (e(self.t("f_s")), styles),
-            '<div><input data-name="t" type="range" min="0" max="20" step="1" value="%d" placeholder="%s"></div>'
-            % (min(20, h.tree_count), e(self.t("f_t"))),
+            '<div><input data-name="t" type="range" min="0" max="60" step="1" value="%d" placeholder="%s"></div>'
+            % (min(60, h.tree_count), e(self.t("f_t"))),
             '<div><input data-name="stone" type="checkbox" value="on" data-off="off"%s placeholder="%s"></div>'
             % (on, e(self.t("f_stone"))),
             '<div><button data-say="%s" data-send>%s</button></div>' % (e(self.t("say_apply")), e(self.t("apply"))),
@@ -289,10 +295,18 @@ class Architect:
         if changes:
             self.undo = (self.undo + [self.house])[-20:]
             self.house = work
-            plan["notes"].append(self.t("changed", ", ".join(changes)))
+            plan["notes"].append(self.t("changed", self.local(", ".join(changes))))
         elif not plan.get("render") and not plan.get("json") and not plan["notes"]:
             plan["help"] = plan["unknown"] = True
         return plan
+
+    def local(self, text):
+        """The change list in the language of the user (it is made in English)."""
+        if self.lang == 0:
+            return text
+        for en, es in LABELS_ES:
+            text = re.sub(en, es, text)
+        return text
 
     def load_json(self, raw, plan):
         try:
@@ -351,8 +365,8 @@ class Architect:
                     raise ValueError("the area must be 20 to 1200 m2")
                 footprint = total / len(h.floors)
                 ratio = float(h.width) / float(h.depth)
-                width = (footprint * ratio) ** 0.5
-                h.resize(check_side(width), check_side(footprint / width))
+                width = round((footprint * ratio) ** 0.5, 1)  # 0.1 m: the step of the sliders
+                h.resize(check_side(width), check_side(round(footprint / width, 1)))
                 done.append("%s m2 (%s x %s m)" % (g(total), g(h.width), g(h.depth)))
             width = value_after(low, r"width|wide|ancho|anchura")
             depth = value_after(low, r"depth|deep|fondo|profundidad|long|largo")

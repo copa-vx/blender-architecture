@@ -106,10 +106,12 @@ def test_readme_example_in_spanish(architect):
     turn = say(architect, "Crea una casa de 120 m², con dos plantas, tres dormitorios y un tejado a dos aguas")
     h = architect.house
     h.validate()
-    assert len(h.floors) == 2 and abs(h.area - 120) < 0.5
+    assert len(h.floors) == 2 and abs(h.area - 120) < 1.0
     assert [r.name for r in h.floors[0].rooms] == ["salon", "cocina"]
     assert len(h.floors[1].rooms) == 3
-    assert turn.text.startswith("Hecho:") and turn.title.startswith("Casa ")
+    assert turn.text.startswith("Hecho: 2 planta(s)") and turn.title.startswith("Casa ")
+    assert (h.width, h.depth) == (8.7, 6.9)  # 0.1 m, the step of the sliders
+    assert 'value="8.7"' in turn.text and 'step="0.1"' in turn.text
 
 
 def test_layouts_survive_the_json_round_trip(architect):
