@@ -1,0 +1,23 @@
+{
+    "service_dependencies_directory": "__services__",
+    "metadata_dependencies_directory": "__metadata__",
+    "blocks_directory": "__block__",
+    "dependencies": {},
+    "include": [
+        "blender",
+        "build_house.py",
+        "examples",
+        "service",
+        ".service/pack_config.json"
+    ],
+    "ignore": [
+        "__pycache__/",
+        "*.pyc",
+        "out/",
+        "*.blend1",
+        ".DS_Store",
+        "chat_pb2.py",
+        "chat_pb2_grpc.py",
+        ".git/"
+    ]
+}
